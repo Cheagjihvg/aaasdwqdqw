@@ -1,3 +1,4 @@
+import os
 import requests
 import string
 import random
@@ -19,7 +20,7 @@ app.add_middleware(
 )
 
 message_array = {}
-BOT_TOKEN = "token here"
+BOT_TOKEN = os.getenv("BOT_TOKEN")
         
 class Update(BaseModel):
     update_id: int
@@ -32,8 +33,8 @@ def add_message(user_id, message, role):
     message_array[user_id].append({"role": role, "content": message})
     
 def process_message(user_id, message):
-	# code here
-	pass
+    # code here
+    pass
 
 @app.post("/webhook")
 async def telegram_webhook(update: Update):
@@ -47,9 +48,7 @@ async def telegram_webhook(update: Update):
         file_id = document["file_id"]
 
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/getFile"
-        params = {
-            "file_id": file_id
-        }
+        params = {"file_id": file_id}
         response = requests.get(url, params=params)
         file_path = response.json()["result"]["file_path"]
 
@@ -61,9 +60,8 @@ async def telegram_webhook(update: Update):
         w_document_io = BytesIO(response.encode('utf-8'))
         w_document_io.seek(0)
         send_document(chat_id, w_document_io, reply_to_message_id=message_id)
+
     elif "audio" in message:
-        audio = message["audio"]
-        file_id = audio["file_id"]
         send_message(chat_id, "Audio is not supported.", reply_to_message_id=message_id)
     elif "text" in message:
         text = message["text"]
@@ -87,6 +85,7 @@ async def telegram_webhook(update: Update):
         send_message(chat_id, "Your message is not supported.", reply_to_message_id=message_id)
     return {"status": "ok"}
 
+
 def send_message(chat_id: int, text: str, reply_to_message_id=None):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     data = {
@@ -98,14 +97,10 @@ def send_message(chat_id: int, text: str, reply_to_message_id=None):
     response = requests.post(url, data=data)
     return response.json()
 
+
 def send_document(chat_id: int, document, reply_to_message_id=None):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendDocument"
-    files = {
-        "document": ("result.txt", document)
-    }
-    data = {
-        "chat_id": chat_id,
-        "reply_to_message_id": reply_to_message_id
-    }
+    files = {"document": ("result.txt", document)}
+    data = {"chat_id": chat_id, "reply_to_message_id": reply_to_message_id}
     response = requests.post(url, files=files, data=data)
     return response.json()
